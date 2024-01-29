@@ -1,0 +1,6 @@
+[deps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+MLUtils = "f1d291b0-491e-4a28-83b9-f70985020b54"
+Wandb = "ad70616a-06c9-5745-b1f1-6a5f42545108"
+Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
