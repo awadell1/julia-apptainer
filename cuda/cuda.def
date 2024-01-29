@@ -1,0 +1,49 @@
+Bootstrap: docker
+From: nvcr.io/nvidia/cuda:{{ CUDA_VERSION }}-devel-ubi8
+
+%arguments
+    CUDA_VERSION=12.3.1
+    JULIA_VERSION=1.10.0
+    JULIA_DEPOT_PATH=/usr/local/share/julia
+
+%files
+    Project.toml /Project.toml
+
+%post
+    # Install Julia
+    JULIA_VERSION="{{ JULIA_VERSION }}"
+    JULIA_SPLIT_VERSION=(${JULIA_VERSION//./ })
+    JULIA_VER2="${JULIA_SPLIT_VERSION[0]}.${JULIA_SPLIT_VERSION[1]}"
+    url="https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VER2}/julia-{{JULIA_VERSION}}-linux-x86_64.tar.gz"
+    curl -fL -o julia.tar.gz "$url"
+    mkdir /usr/local/julia
+    tar -xzf julia.tar.gz --strip-components=1 -C /usr/local/julia
+    rm julia.tar.gz
+    export PATH="/usr/local/julia/bin:$PATH"
+
+    # Setup CUDA Environment
+    export JULIA_PROJECT="{{ JULIA_DEPOT_PATH }}/environments/cuda"
+    mkdir --parents ${JULIA_PROJECT}
+    mv /Project.toml ${JULIA_PROJECT}
+    sed -i 's/CUDA_VERSION/{{ CUDA_VERSION }}/g' "${JULIA_PROJECT}/Project.toml"
+
+    # Install CUDA
+    export JULIA_DEPOT_PATH="{{ JULIA_DEPOT_PATH }}"
+    export JULIA_LOAD_PATH="$JULIA_PROJECT:@stdlib"
+    export CUDA_HOME="/usr/local/cuda"
+    export JULIA_PKG_PRECOMPILE_AUTO=0
+    julia --startup-file=no --history-file=no -e '
+        @info "Precompiling" DEPOT_PATH LOAD_PATH
+        using Pkg
+        Pkg.instantiate()
+        using CUDA
+        CUDA.set_runtime_version!(v"{{ CUDA_VERSION }}"; local_toolkit=true)
+        Pkg.precompile()
+        CUDA.precompile_runtime()
+    '
+
+%environment
+    export JULIA_DEPOT_PATH="${JULIA_DEPOT_PATH}:{{ JULIA_DEPOT_PATH }}"
+    export JULIA_LOAD_PATH="${JULIA_LOAD_PATH}:{{ JULIA_DEPOT_PATH }}/environments/cuda"
+    export CUDA_HOME="/usr/local/cuda"
+    export PATH="/usr/local/julia/bin:$PATH"
