@@ -1,21 +1,20 @@
 Bootstrap: localimage
-From: ../cuda/cuda.sif
+From: ../pytorch/base.sif
 
 %files
     Project.toml /Project.toml
 
 %post
     # Install Wandb
-    yum install -y python3.11 python3.11-pip python3.11-numpy python3.11-requests
     python3 -m pip install wandb
 
     # Setup Environment
-    export JULIA_PYTHONCALL_EXE=$(which python3.11)
+    export JULIA_PYTHONCALL_EXE=$(which python3)
     export JULIA_PROJECT="${JULIA_DEPOT_PATH##*:}/environments/training"
     mkdir --parents $JULIA_PROJECT
     mv /Project.toml $JULIA_PROJECT
     julia --startup-file=no --history-file=no -e 'using Pkg; Pkg.instantiate()'
 
 %environment
-    export JULIA_PYTHONCALL_EXE=$(which python3.11)
+    export JULIA_PYTHONCALL_EXE=$(which python3)
     export JULIA_LOAD_PATH="${JULIA_LOAD_PATH}:${JULIA_DEPOT_PATH}/environments/training"
